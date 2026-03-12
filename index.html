@@ -2,131 +2,110 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gym Pro + Timer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gym Pro +40</title>
     <style>
-        :root { --primary: #2563eb; --bg: #f1f5f9; --card: #ffffff; --accent: #059669; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); margin: 0; padding: 20px; padding-bottom: 100px; }
-        .container { max-width: 500px; margin: auto; }
-        h1 { text-align: center; color: #1e293b; font-size: 1.5rem; }
-        
-        /* Formulario */
-        .form-card { background: var(--card); padding: 20px; border-radius: 15px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); margin-bottom: 25px; }
-        .row { display: flex; gap: 10px; }
-        input, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 10px; border: 1px solid #e2e8f0; font-size: 16px; box-sizing: border-box; }
-        button { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; transition: opacity 0.2s; }
-        button:active { opacity: 0.7; }
-        
-        /* Lista */
-        .exercise-card { background: var(--card); border-radius: 15px; overflow: hidden; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
-        .exercise-img { width: 100%; height: 220px; object-fit: cover; background: #cbd5e1; }
-        .exercise-info { padding: 15px; position: relative; }
-        .exercise-info h3 { margin: 0 0 10px 0; color: #1e293b; text-transform: capitalize; }
-        .stats { display: flex; gap: 15px; color: #475569; font-size: 0.9rem; font-weight: 500; }
-        .tag { background: #f1f5f9; padding: 4px 8px; border-radius: 6px; }
-        .delete-btn { background: #fee2e2; color: #ef4444; width: auto; padding: 8px; font-size: 12px; position: absolute; right: 15px; top: 15px; }
-
-        /* Temporizador Flotante */
-        .timer-float { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; 
-                       background: #1e293b; color: white; padding: 15px; border-radius: 20px; display: flex; 
-                       align-items: center; justify-content: space-between; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3); z-index: 100; }
-        .timer-display { font-size: 1.8rem; font-weight: bold; font-family: monospace; color: #fbbf24; }
-        .timer-btns { display: flex; gap: 5px; width: auto; }
-        .t-btn { width: 60px; padding: 8px; margin: 0; font-size: 12px; }
-        .btn-rest { background: var(--accent); }
+        :root { --primary: #2563eb; --bg: #f1f5f9; --card: #ffffff; }
+        body { font-family: sans-serif; background: var(--bg); margin: 0; padding: 15px; padding-bottom: 100px; }
+        .form-card { background: var(--card); padding: 15px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        input { width: 100%; padding: 10px; margin: 5px 0; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; font-size: 16px; }
+        button { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; margin-top: 10px; }
+        .exercise-card { background: var(--card); border-radius: 12px; margin-bottom: 15px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .exercise-img { width: 100%; height: 200px; object-fit: cover; background: #eee; }
+        .info { padding: 10px; position: relative; }
+        .del-btn { position: absolute; right: 10px; top: 10px; color: red; border: none; background: none; width: auto; }
+        #timer { position: fixed; bottom: 0; left: 0; width: 100%; background: #1e293b; color: white; padding: 15px; text-align: center; display: flex; justify-content: space-around; align-items: center; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>🏋️‍♂️ Mis Entrenamientos</h1>
-    
     <div class="form-card">
-        <input type="text" id="name" placeholder="Ejercicio (ej. Sentadilla)">
-        <div class="row">
-            <input type="text" id="reps" placeholder="Series/Reps">
-            <input type="text" id="weight" placeholder="Peso (kg/lb)">
-        </div>
-        <label style="font-size: 12px; color: #64748b; margin-left: 5px;">Imagen:</label>
+        <h3>Añadir Ejercicio</h3>
+        <input type="text" id="name" placeholder="Nombre (ej. Sentadillas)">
+        <input type="text" id="reps" placeholder="Reps (ej. 4x12)">
+        <input type="text" id="weight" placeholder="Peso (ej. 20kg)">
         <input type="file" id="photo" accept="image/*" capture="environment">
-        <button onclick="addExercise()">Guardar Ejercicio</button>
+        <button onclick="addExercise()">💾 Guardar Ejercicio</button>
     </div>
 
-    <div id="exerciseList"></div>
-</div>
+    <div id="list"></div>
 
-<div class="timer-float">
-    <div>
-        <div style="font-size: 10px; opacity: 0.8;">DESCANSO</div>
-        <div class="timer-display" id="time">01:30</div>
+    <div id="timer">
+        <span id="time" style="font-size: 20px; font-weight: bold;">01:30</span>
+        <button onclick="startT(60)" style="width: auto; margin: 0; padding: 5px 10px;">60s</button>
+        <button onclick="startT(90)" style="width: auto; margin: 0; padding: 5px 10px;">90s</button>
     </div>
-    <div class="timer-btns">
-        <button class="t-btn btn-rest" onclick="startTimer(90)">90s</button>
-        <button class="t-btn btn-rest" onclick="startTimer(60)">60s</button>
-        <button class="t-btn" style="background:#475569" onclick="addTime(30)">+30s</button>
-    </div>
-</div>
 
 <script>
-    let exercises = JSON.parse(localStorage.getItem('myWorkoutsV2')) || [];
-    let timerInterval;
+    let db = JSON.parse(localStorage.getItem('gymData')) || [];
 
-    function renderExercises() {
-        const list = document.getElementById('exerciseList');
+    function render() {
+        const list = document.getElementById('list');
         list.innerHTML = '';
-        exercises.forEach((ex, index) => {
+        db.forEach((ex, i) => {
             list.innerHTML += `
                 <div class="exercise-card">
-                    ${ex.image ? <img src="${ex.image}" class="exercise-img"> : '<div class="exercise-img" style="display:flex;align-items:center;justify-content:center;color:#94a3b8">Sin foto</div>'}
-                    <div class="exercise-info">
-                        <button class="delete-btn" onclick="deleteExercise(${index})">Eliminar</button>
-                        <h3>${ex.name}</h3>
-                        <div class="stats">
-                            <span class="tag">📊 ${ex.reps}</span>
-                            <span class="tag">⚖️ ${ex.weight}</span>
-                        </div>
+                    ${ex.img ? <img src="${ex.img}" class="exercise-img"> : ''}
+                    <div class="info">
+                        <strong>${ex.name}</strong><br>
+                        <span>${ex.reps} | ${ex.weight}</span>
+                        <button class="del-btn" onclick="del(${i})">X</button>
                     </div>
-                </div>
-            `;
+                </div>`;
         });
     }
 
-    function addExercise() {
+    async function addExercise() {
         const name = document.getElementById('name').value;
         const reps = document.getElementById('reps').value;
         const weight = document.getElementById('weight').value;
-        const photoFile = document.getElementById('photo').files[0];
+        const file = document.getElementById('photo').files[0];
 
-        if (!name) return alert("Ponle un nombre al menos");
+        if (!name) return alert("Escribe el nombre del ejercicio");
 
-        if (photoFile) {
-            const reader = new FileReader();
-            reader.onloadend = () => saveData(name, reps, weight, reader.result);
-            reader.readAsDataURL(photoFile);
-        } else {
-            saveData(name, reps, weight, null);
+        let imgBase64 = null;
+        if (file) {
+            // Esto ayuda a que la foto no trabe la app
+            imgBase64 = await toBase64(file);
+        }
+
+        try {
+            db.push({ name, reps, weight, img: imgBase64 });
+            localStorage.setItem('gymData', JSON.stringify(db));
+            render();
+            // Limpiar
+            document.getElementById('name').value = '';
+            document.getElementById('reps').value = '';
+            document.getElementById('weight').value = '';
+            document.getElementById('photo').value = '';
+            alert("¡Guardado!");
+        } catch (e) {
+            alert("Error: La foto es muy pesada. Intenta con una más pequeña o sin foto.");
         }
     }
 
-    function saveData(name, reps, weight, image) {
-        exercises.push({ name, reps, weight, image });
-        localStorage.setItem('myWorkoutsV2', JSON.stringify(exercises));
-        renderExercises();
-        // Limpiar campos
-        ['name', 'reps', 'weight', 'photo'].forEach(id => document.getElementById(id).value = '');
+    const toBase64 = file => new Promise((res, rej) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => res(reader.result);
+        reader.onerror = e => rej(e);
+    });
+
+    function del(i) { if(confirm("¿Borrar?")) { db.splice(i,1); localStorage.setItem('gymData',JSON.stringify(db)); render(); } }
+
+    let t;
+    function startT(s) {
+        clearInterval(t);
+        let rem = s;
+        t = setInterval(() => {
+            rem--;
+            let m = Math.floor(rem/60), sec = rem%60;
+            document.getElementById('time').innerText = ${m}:${sec<10?'0':''}${sec};
+            if(rem<=0) { clearInterval(t); alert("¡A entrenar!"); }
+        }, 1000);
     }
 
-    function deleteExercise(index) {
-        if(confirm("¿Borrar ejercicio?")) {
-            exercises.splice(index, 1);
-            localStorage.setItem('myWorkoutsV2', JSON.stringify(exercises));
-            renderExercises();
-        }
-    }
-
-    // --- Lógica del Temporizador ---
-    let timeLeft = 0;
-
-    function startTimer(seconds) {
-        clearInterval(timerInterval);
-        timeLeft = seconds;
+    render();
+</script>
+</body>
+</html>
