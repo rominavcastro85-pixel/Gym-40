@@ -1,111 +1,75 @@
 <!DOCTYPE html>
-<html lang="es">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gym Pro +40</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gym +40</title>
     <style>
-        :root { --primary: #2563eb; --bg: #f1f5f9; --card: #ffffff; }
-        body { font-family: sans-serif; background: var(--bg); margin: 0; padding: 15px; padding-bottom: 100px; }
-        .form-card { background: var(--card); padding: 15px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        input { width: 100%; padding: 10px; margin: 5px 0; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; font-size: 16px; }
-        button { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; margin-top: 10px; }
-        .exercise-card { background: var(--card); border-radius: 12px; margin-bottom: 15px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .exercise-img { width: 100%; height: 200px; object-fit: cover; background: #eee; }
-        .info { padding: 10px; position: relative; }
-        .del-btn { position: absolute; right: 10px; top: 10px; color: red; border: none; background: none; width: auto; }
-        #timer { position: fixed; bottom: 0; left: 0; width: 100%; background: #1e293b; color: white; padding: 15px; text-align: center; display: flex; justify-content: space-around; align-items: center; }
+        body { font-family: sans-serif; background: #f0f2f5; padding: 20px; }
+        .card { background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        input { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 5px; font-weight: bold; }
+        .ejercicio { background: white; padding: 15px; border-radius: 10px; margin-top: 10px; border-left: 5px solid #007bff; position: relative; }
+        .btn-del { position: absolute; right: 10px; top: 10px; color: red; background: none; border: none; width: auto; }
     </style>
 </head>
 <body>
 
-    <div class="form-card">
-        <h3>Añadir Ejercicio</h3>
-        <input type="text" id="name" placeholder="Nombre (ej. Sentadillas)">
-        <input type="text" id="reps" placeholder="Reps (ej. 4x12)">
-        <input type="text" id="weight" placeholder="Peso (ej. 20kg)">
-        <input type="file" id="photo" accept="image/*" capture="environment">
-        <button onclick="addExercise()">💾 Guardar Ejercicio</button>
+    <div class="card">
+        <h3>Nuevo Ejercicio</h3>
+        <input type="text" id="n" placeholder="Nombre">
+        <input type="text" id="r" placeholder="Reps">
+        <input type="text" id="p" placeholder="Peso">
+        <button onclick="guardar()">AÑADIR</button>
     </div>
 
-    <div id="list"></div>
+    <div id="lista"></div>
 
-    <div id="timer">
-        <span id="time" style="font-size: 20px; font-weight: bold;">01:30</span>
-        <button onclick="startT(60)" style="width: auto; margin: 0; padding: 5px 10px;">60s</button>
-        <button onclick="startT(90)" style="width: auto; margin: 0; padding: 5px 10px;">90s</button>
-    </div>
-
-<script>
-    let db = JSON.parse(localStorage.getItem('gymData')) || [];
-
-    function render() {
-        const list = document.getElementById('list');
-        list.innerHTML = '';
-        db.forEach((ex, i) => {
-            list.innerHTML += `
-                <div class="exercise-card">
-                    ${ex.img ? <img src="${ex.img}" class="exercise-img"> : ''}
-                    <div class="info">
-                        <strong>${ex.name}</strong><br>
-                        <span>${ex.reps} | ${ex.weight}</span>
-                        <button class="del-btn" onclick="del(${i})">X</button>
-                    </div>
-                </div>`;
-        });
-    }
-
-    async function addExercise() {
-        const name = document.getElementById('name').value;
-        const reps = document.getElementById('reps').value;
-        const weight = document.getElementById('weight').value;
-        const file = document.getElementById('photo').files[0];
-
-        if (!name) return alert("Escribe el nombre del ejercicio");
-
-        let imgBase64 = null;
-        if (file) {
-            // Esto ayuda a que la foto no trabe la app
-            imgBase64 = await toBase64(file);
+    <script>
+        // Cargar datos al abrir
+        let datos = JSON.parse(localStorage.getItem('gym_v3')) || [];
+        
+        function mostrar() {
+            const contenedor = document.getElementById('lista');
+            contenedor.innerHTML = '';
+            datos.forEach((e, i) => {
+                contenedor.innerHTML += `
+                    <div class="ejercicio">
+                        <strong>${e.nombre}</strong><br>
+                        ${e.reps} - ${e.peso}
+                        <button class="btn-del" onclick="borrar(${i})">X</button>
+                    </div>`;
+            });
         }
 
-        try {
-            db.push({ name, reps, weight, img: imgBase64 });
-            localStorage.setItem('gymData', JSON.stringify(db));
-            render();
-            // Limpiar
-            document.getElementById('name').value = '';
-            document.getElementById('reps').value = '';
-            document.getElementById('weight').value = '';
-            document.getElementById('photo').value = '';
-            alert("¡Guardado!");
-        } catch (e) {
-            alert("Error: La foto es muy pesada. Intenta con una más pequeña o sin foto.");
+        function guardar() {
+            const n = document.getElementById('n').value;
+            const r = document.getElementById('r').value;
+            const p = document.getElementById('p').value;
+
+            if(n === "") { alert("Pon un nombre"); return; }
+
+            datos.push({ nombre: n, reps: r, peso: p });
+            localStorage.setItem('gym_v3', JSON.stringify(datos));
+            
+            // Limpiar campos
+            document.getElementById('n').value = '';
+            document.getElementById('r').value = '';
+            document.getElementById('p').value = '';
+            
+            mostrar();
+            alert("¡Guardado con éxito!");
         }
-    }
 
-    const toBase64 = file => new Promise((res, rej) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => res(reader.result);
-        reader.onerror = e => rej(e);
-    });
+        function borrar(i) {
+            if(confirm("¿Borrar?")) {
+                datos.splice(i, 1);
+                localStorage.setItem('gym_v3', JSON.stringify(datos));
+                mostrar();
+            }
+        }
 
-    function del(i) { if(confirm("¿Borrar?")) { db.splice(i,1); localStorage.setItem('gymData',JSON.stringify(db)); render(); } }
-
-    let t;
-    function startT(s) {
-        clearInterval(t);
-        let rem = s;
-        t = setInterval(() => {
-            rem--;
-            let m = Math.floor(rem/60), sec = rem%60;
-            document.getElementById('time').innerText = ${m}:${sec<10?'0':''}${sec};
-            if(rem<=0) { clearInterval(t); alert("¡A entrenar!"); }
-        }, 1000);
-    }
-
-    render();
-</script>
+        mostrar();
+    </script>
 </body>
 </html>
