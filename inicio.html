@@ -3,85 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi Gym</title>
+    <title>Mi Gym Pro</title>
     <style>
-        body { font-family: sans-serif; padding: 15px; background: #f0f2f5; }
+        body { font-family: sans-serif; padding: 15px; background: #f0f2f5; margin: 0; }
         .caja { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
-        button { width: 100%; padding: 14px; background: #007bff; color: white; border: none; border-radius: 8px; font-weight: bold; }
-        .ej { background: white; border-radius: 12px; margin-top: 15px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .ej img { width: 100%; height: 180px; object-fit: cover; display: block; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        button { width: 100%; padding: 14px; background: #28a745; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; }
+        .ej { background: white; border-radius: 12px; margin-top: 15px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: relative; border-left: 5px solid #28a745; }
+        .ej img { width: 100%; height: 200px; object-fit: cover; display: block; }
         .info { padding: 12px; }
-        .borrar { color: red; background: none; border: none; float: right; }
+        .borrar { position: absolute; right: 10px; top: 10px; color: red; background: white; border-radius: 50%; border: none; width: 30px; height: 30px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
     </style>
 </head>
 <body>
 
     <div class="caja">
-        <h3>💪 Nuevo Ejercicio</h3>
-        <input type="text" id="n" placeholder="Nombre">
-        <input type="text" id="d" placeholder="Reps / Peso">
-        <label style="font-size:12px; color:666;">Seleccionar Foto o Cámara:</label>
-        <input type="file" id="f" accept="image/*"> 
-        <button onclick="guardar()">AÑADIR A LA LISTA</button>
+        <h3>💪 Añadir Ejercicio</h3>
+        <input type="text" id="nombre" placeholder="Nombre del ejercicio">
+        <input type="text" id="detalles" placeholder="Reps / Peso">
+        <label style="display:block; margin-top:10px; font-size:13px; color:#666;">Foto (Opcional):</label>
+        <input type="file" id="foto" accept="image/*">
+        <button onclick="guardar()">GUARDAR</button>
     </div>
 
     <div id="lista"></div>
 
     <script>
-        let db = JSON.parse(localStorage.getItem('gym_v5')) || [];
+        let datos = JSON.parse(localStorage.getItem('gym_vFinal_ok')) || [];
 
         function mostrar() {
-            const div = document.getElementById('lista');
-            div.innerHTML = '';
-            db.forEach((e, i) => {
-                div.innerHTML += `
+            const lista = document.getElementById('lista');
+            lista.innerHTML = '';
+            datos.forEach((e, i) => {
+                lista.innerHTML += `
                     <div class="ej">
                         ${e.img ? <img src="${e.img}"> : ''}
                         <div class="info">
-                            <button class="borrar" onclick="eliminar(${i})">X</button>
-                            <strong>${e.n}</strong><br><small>${e.d}</small>
+                            <strong>${e.n}</strong><br>
+                            <span>${e.d}</span>
                         </div>
+                        <button class="borrar" onclick="eliminar(${i})">X</button>
                     </div>`;
             });
         }
 
-        async function guardar() {
-            const n = document.getElementById('n').value;
-            const d = document.getElementById('d').value;
-            const file = document.getElementById('f').files[0];
+        function guardar() {
+            const n = document.getElementById('nombre').value;
+            const d = document.getElementById('detalles').value;
+            const archivo = document.getElementById('foto').files[0];
 
-            if(!n) return alert("Falta el nombre");
+            if(!n) return alert("Pon el nombre");
 
-            let imgB64 = "";
-            if(file) {
-                // Versión de carga directa más simple
-                const reader = new FileReader();
-                reader.readAsDataURL(file);
-                reader.onload = () => {
-                    db.push({ n, d, img: reader.result });
-                    localStorage.setItem('gym_v5', JSON.stringify(db));
-                    limpiar();
+            if (archivo) {
+                const lector = new FileReader();
+                lector.onload = function(e) {
+                    const imgB64 = e.target.result;
+                    datos.push({ n: n, d: d, img: imgB64 });
+                    finalizar();
                 };
+                lector.readAsDataURL(archivo);
             } else {
-                db.push({ n, d, img: "" });
-                localStorage.setItem('gym_v5', JSON.stringify(db));
-                limpiar();
+                datos.push({ n: n, d: d, img: "" });
+                finalizar();
             }
         }
 
-        function limpiar() {
-            document.getElementById('n').value = '';
-            document.getElementById('d').value = '';
-            document.getElementById('f').value = '';
-            mostrar();
-            alert("¡Ejercicio guardado!");
+        function finalizar() {
+            try {
+                localStorage.setItem('gym_vFinal_ok', JSON.stringify(datos));
+                document.getElementById('nombre').value = '';
+                document.getElementById('detalles').value = '';
+                document.getElementById('foto').value = '';
+                mostrar();
+                alert("¡Guardado!");
+            } catch(e) {
+                alert("La foto es muy grande. Intenta con otra o sin foto.");
+                datos.pop(); // Quita el último si falló la memoria
+            }
         }
 
         function eliminar(i) {
             if(confirm("¿Borrar?")) {
-                db.splice(i, 1);
-                localStorage.setItem('gym_v5', JSON.stringify(db));
+                datos.splice(i, 1);
+                localStorage.setItem('gym_vFinal_ok', JSON.stringify(datos));
                 mostrar();
             }
         }
