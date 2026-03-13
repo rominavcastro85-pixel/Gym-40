@@ -3,69 +3,101 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi Gym Pro</title>
+    <title>Gym Pro +40</title>
     <style>
         body { font-family: sans-serif; padding: 15px; background: #f0f2f5; margin: 0; }
         .caja { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
         input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-        button { width: 100%; padding: 14px; background: #28a745; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; }
-        .ej { background: white; border-radius: 12px; margin-top: 15px; o…
-[10:18 p.m., 12/3/2026] Ro: <!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gym Lista</title>
-    <style>
-        body { font-family: sans-serif; padding: 20px; background: #f0f0f0; }
-        .caja { background: white; padding: 15px; border-radius: 10px; margin-bottom: 20px; }
-        input { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 16px; }
-        button { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 5px; font-weight: bold; }
-        .ejercicio { background: white; padding: 15px; border-radius: 10px; margin-top: 10px; border-left: 5px solid #007bff; }
+        button { width: 100%; padding: 14px; background: #007bff; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; }
+        .ej { background: white; border-radius: 12px; margin-top: 15px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: relative; }
+        .ej img { width: 100%; height: 200px; object-fit: cover; display: block; }
+        .info { padding: 12px; }
+        .borrar { position: absolute; right: 10px; top: 10px; color: red; background: white; border-radius: 50%; border: none; width: 30px; height: 30px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
     </style>
 </head>
 <body>
 
     <div class="caja">
-        <h3>Nueva Rutina</h3>
-        <input type="text" id="nombre" placeholder="Ejercicio">
-        <input type="text" id="datos" placeholder="Reps / Peso">
-        <button onclick="salvar()">AÑADIR</button>
+        <h3>💪 Mi Rutina con Fotos</h3>
+        <input type="text" id="n" placeholder="Ejercicio (ej: Sentadilla)">
+        <input type="text" id="d" placeholder="Reps / Peso">
+        <label style="display:block; margin-top:10px; font-size:13px; color:#666;">Seleccionar Foto:</label>
+        <input type="file" id="f" accept="image/*">
+        <button onclick="preparar()">GUARDAR</button>
     </div>
 
     <div id="lista"></div>
 
     <script>
-        // Cambiamos el nombre de la memoria para que esté vacía
-        let clave = "gym_limpio_v1";
+        let clave = "gym_final_fotos_v1";
+        let datos = JSON.parse(localStorage.getItem(clave)) || [];
 
         function ver() {
             const cont = document.getElementById('lista');
             cont.innerHTML = '';
-            let items = JSON.parse(localStorage.getItem(clave)) || [];
-            items.forEach((e, i) => {
-                cont.innerHTML += `<div class="ejercicio">
-                    <strong>${e.n}</strong><br>${e.d}
-                </div>`;
+            datos.forEach((e, i) => {
+                cont.innerHTML += `
+                    <div class="ej">
+                        ${e.img ? `<img src="${e.img}">` : ''}
+                        <div class="info">
+                            <strong>${e.n}</strong><br><span>${e.d}</span>
+                        </div>
+                        <button class="borrar" onclick="eliminar(${i})">X</button>
+                    </div>`;
             });
         }
 
-        function salvar() {
-            const n = document.getElementById('nombre').value;
-            const d = document.getElementById('datos').value;
-            if(!n) return alert("Escribe algo");
+        function preparar() {
+            const n = document.getElementById('n').value;
+            const d = document.getElementById('d').value;
+            const archivo = document.getElementById('f').files[0];
 
-            let items = JSON.parse(localStorage.getItem(clave)) || [];
-            items.push({ n: n, d: d });
-            
+            if(!n) return alert("Escribe el nombre");
+
+            if (archivo) {
+                const lector = new FileReader();
+                lector.onload = function(e) {
+                    const img = new Image();
+                    img.src = e.target.result;
+                    img.onload = function() {
+                        // COMPRESIÓN: Achicamos la foto a 400px para que no pese
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        const ancho = 400;
+                        const escala = ancho / img.width;
+                        canvas.width = ancho;
+                        canvas.height = img.height * escala;
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        
+                        salvar(n, d, canvas.toDataURL('image/jpeg', 0.6));
+                    };
+                };
+                lector.readAsDataURL(archivo);
+            } else {
+                salvar(n, d, "");
+            }
+        }
+
+        function salvar(nombre, detalle, imagen) {
+            datos.push({ n: nombre, d: detalle, img: imagen });
             try {
-                localStorage.setItem(clave, JSON.stringify(items));
-                document.getElementById('nombre').value = '';
-                document.getElementById('datos').value = '';
+                localStorage.setItem(clave, JSON.stringify(datos));
+                document.getElementById('n').value = '';
+                document.getElementById('d').value = '';
+                document.getElementById('f').value = '';
                 ver();
-                alert("¡Guardado!");
+                alert("¡Guardado con éxito!");
             } catch(e) {
-                alert("Error de memoria. Limpia los datos de tu navegador.");
+                alert("Memoria llena. Intenta borrar otros ejercicios.");
+                datos.pop();
+            }
+        }
+
+        function eliminar(i) {
+            if(confirm("¿Borrar?")) {
+                datos.splice(i, 1);
+                localStorage.setItem(clave, JSON.stringify(datos));
+                ver();
             }
         }
 
@@ -73,4 +105,3 @@
     </script>
 </body>
 </html>
-
