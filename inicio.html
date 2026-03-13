@@ -3,29 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi Gym 40</title>
+    <title>Mi Gym Pro</title>
     <style>
-        body { font-family: sans-serif; padding: 15px; background: #f0f2f5; margin: 0; }
+        body { font-family: sans-serif; padding: 15px; background: #f0f2f5; margin: 0; padding-bottom: 50px; }
         .caja { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
         input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-        button { width: 100%; padding: 14px; background: #007bff; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; margin-top: 10px; }
+        .btn-guardar { width: 100%; padding: 14px; background: #007bff; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; margin-top: 10px; }
         .ej { background: white; border-radius: 12px; margin-top: 15px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: relative; }
         .ej img { width: 100%; height: auto; max-height: 250px; object-fit: cover; display: block; }
         .info { padding: 12px; }
-        .borrar { position: absolute; right: 10px; top: 10px; color: white; background: rgba(255,0,0,0.7); border-radius: 50%; border: none; width: 30px; height: 30px; font-weight: bold; }
+        .acciones { display: flex; gap: 10px; padding: 0 12px 12px; }
+        .btn-edit { background: #ffc107; border: none; padding: 8px; border-radius: 5px; flex: 1; font-weight: bold; }
+        .btn-del { background: #ff4444; color: white; border: none; padding: 8px; border-radius: 5px; flex: 1; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <div class="caja">
-        <h3>🏋️ Guardar Ejercicio</h3>
-        <input type="text" id="n" placeholder="Nombre">
+    <div class="caja" id="formulario">
+        <h3 id="titulo-form">🏋️ Guardar Ejercicio</h3>
+        <input type="hidden" id="indice-edit">
+        <input type="text" id="n" placeholder="Nombre (ej: Sentadilla)">
         <input type="text" id="d" placeholder="Reps / Peso">
-        
-        <label style="font-size: 13px; color: #666;">Selecciona imagen:</label>
+        <label id="label-foto" style="font-size: 13px; color: #666;">Selecciona imagen:</label>
         <input type="file" id="f" accept="image/*">
-        
-        <button onclick="guardar()">AÑADIR A LA LISTA</button>
+        <button class="btn-guardar" id="btn-principal" onclick="guardar()">AÑADIR A LA LISTA</button>
+        <button class="btn-guardar" id="btn-cancelar" style="display:none; background:#6c757d;" onclick="cancelarEdicion()">CANCELAR</button>
     </div>
 
     <div id="lista"></div>
@@ -33,6 +35,7 @@
     <script>
         let clave = "gym_vFinal_super_compatible";
         let datos = JSON.parse(localStorage.getItem(clave)) || [];
+        let editando = false;
 
         function mostrar() {
             const cont = document.getElementById('lista');
@@ -44,7 +47,10 @@
                         <div class="info">
                             <strong>${e.n}</strong><br><span>${e.d}</span>
                         </div>
-                        <button class="borrar" onclick="eliminar(${i})">X</button>
+                        <div class="acciones">
+                            <button class="btn-edit" onclick="prepararEdicion(${i})">EDITAR</button>
+                            <button class="btn-del" onclick="eliminar(${i})">BORRAR</button>
+                        </div>
                     </div>`;
             });
         }
@@ -53,39 +59,68 @@
             const n = document.getElementById('n').value;
             const d = document.getElementById('d').value;
             const archivo = document.getElementById('f').files[0];
+            const indice = document.getElementById('indice-edit').value;
 
             if(!n) return alert("Escribe el nombre");
 
             if (archivo) {
                 const lector = new FileReader();
                 lector.onloadend = function() {
-                    // Guardamos directo sin procesar para evitar errores
-                    datos.push({ n: n, d: d, img: lector.result });
-                    finalizar();
+                    procesarGuardado(n, d, lector.result, indice);
                 };
                 lector.readAsDataURL(archivo);
             } else {
-                datos.push({ n: n, d: d, img: "" });
-                finalizar();
+                // Si estamos editando y no subimos foto nueva, mantenemos la anterior
+                const fotoAnterior = editando ? datos[indice].img : "";
+                procesarGuardado(n, d, fotoAnterior, indice);
             }
+        }
+
+        function procesarGuardado(nombre, detalle, imagen, indice) {
+            if (editando) {
+                datos[indice] = { n: nombre, d: detalle, img: imagen };
+                editando = false;
+            } else {
+                datos.push({ n: nombre, d: detalle, img: imagen });
+            }
+            finalizar();
         }
 
         function finalizar() {
             try {
                 localStorage.setItem(clave, JSON.stringify(datos));
-                document.getElementById('n').value = '';
-                document.getElementById('d').value = '';
-                document.getElementById('f').value = '';
+                cancelarEdicion();
                 mostrar();
-                alert("¡Guardado!");
+                alert("¡Hecho!");
             } catch(e) {
-                alert("La foto es muy grande para la memoria del móvil. Prueba con una foto de menos calidad.");
-                datos.pop();
+                alert("Foto muy pesada.");
             }
         }
 
+        function prepararEdicion(i) {
+            editando = true;
+            document.getElementById('n').value = datos[i].n;
+            document.getElementById('d').value = datos[i].d;
+            document.getElementById('indice-edit').value = i;
+            
+            document.getElementById('titulo-form').innerText = "📝 Editando Ejercicio";
+            document.getElementById('btn-principal').innerText = "ACTUALIZAR DATOS";
+            document.getElementById('btn-cancelar').style.display = "block";
+            window.scrollTo(0,0);
+        }
+
+        function cancelarEdicion() {
+            editando = false;
+            document.getElementById('n').value = '';
+            document.getElementById('d').value = '';
+            document.getElementById('f').value = '';
+            document.getElementById('titulo-form').innerText = "🏋️ Guardar Ejercicio";
+            document.getElementById('btn-principal').innerText = "AÑADIR A LA LISTA";
+            document.getElementById('btn-cancelar').style.display = "none";
+        }
+
         function eliminar(i) {
-            if(confirm("¿Borrar?")) {
+            if(confirm("¿Borrar ejercicio?")) {
                 datos.splice(i, 1);
                 localStorage.setItem(clave, JSON.stringify(datos));
                 mostrar();
