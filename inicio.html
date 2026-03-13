@@ -3,101 +3,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi Gym con Fotos</title>
+    <title>Mi Gym</title>
     <style>
-        body { font-family: sans-serif; padding: 15px; background: #f0f2f5; margin: 0; }
+        body { font-family: sans-serif; padding: 15px; background: #f0f2f5; }
         .caja { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-        button { width: 100%; padding: 14px; background: #007bff; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; }
-        .ej { background: white; border-radius: 12px; margin-top: 15px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: relative; }
-        .ej img { width: 100%; height: 200px; object-fit: cover; display: block; background: #eee; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
+        button { width: 100%; padding: 14px; background: #007bff; color: white; border: none; border-radius: 8px; font-weight: bold; }
+        .ej { background: white; border-radius: 12px; margin-top: 15px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .ej img { width: 100%; height: 180px; object-fit: cover; display: block; }
         .info { padding: 12px; }
-        .borrar { position: absolute; right: 10px; bottom: 10px; color: #ff4444; background: none; border: none; font-weight: bold; }
-        label { font-size: 14px; color: #666; font-weight: bold; }
+        .borrar { color: red; background: none; border: none; float: right; }
     </style>
 </head>
 <body>
 
     <div class="caja">
-        <h3>💪 Añadir Ejercicio</h3>
-        <input type="text" id="nombre" placeholder="Nombre (ej: Sentadilla)">
-        <input type="text" id="detalles" placeholder="Reps / Peso (ej: 4x12 - 20kg)">
-        <label>Foto del ejercicio:</label>
-        <input type="file" id="foto" accept="image/*" capture="environment">
-        <button onclick="procesar()">GUARDAR EJERCICIO</button>
+        <h3>💪 Nuevo Ejercicio</h3>
+        <input type="text" id="n" placeholder="Nombre">
+        <input type="text" id="d" placeholder="Reps / Peso">
+        <label style="font-size:12px; color:666;">Seleccionar Foto o Cámara:</label>
+        <input type="file" id="f" accept="image/*"> 
+        <button onclick="guardar()">AÑADIR A LA LISTA</button>
     </div>
 
     <div id="lista"></div>
 
     <script>
-        let datos = JSON.parse(localStorage.getItem('gym_vFinal_fotos')) || [];
+        let db = JSON.parse(localStorage.getItem('gym_v5')) || [];
 
         function mostrar() {
-            const lista = document.getElementById('lista');
-            lista.innerHTML = '';
-            datos.forEach((e, i) => {
-                lista.innerHTML += `
+            const div = document.getElementById('lista');
+            div.innerHTML = '';
+            db.forEach((e, i) => {
+                div.innerHTML += `
                     <div class="ej">
                         ${e.img ? <img src="${e.img}"> : ''}
                         <div class="info">
-                            <strong>${e.n}</strong><br>
-                            <small>${e.d}</small>
-                            <button class="borrar" onclick="eliminar(${i})">ELIMINAR</button>
+                            <button class="borrar" onclick="eliminar(${i})">X</button>
+                            <strong>${e.n}</strong><br><small>${e.d}</small>
                         </div>
                     </div>`;
             });
         }
 
-        async function procesar() {
-            const n = document.getElementById('nombre').value;
-            const d = document.getElementById('detalles').value;
-            const file = document.getElementById('foto').files[0];
+        async function guardar() {
+            const n = document.getElementById('n').value;
+            const d = document.getElementById('d').value;
+            const file = document.getElementById('f').files[0];
 
-            if(!n) return alert("Pon el nombre del ejercicio");
+            if(!n) return alert("Falta el nombre");
 
-            let imgFinal = null;
+            let imgB64 = "";
             if(file) {
-                imgFinal = await comprimir(file);
-            }
-
-            try {
-                datos.push({ n: n, d: d, img: imgFinal });
-                localStorage.setItem('gym_vFinal_fotos', JSON.stringify(datos));
-                document.getElementById('nombre').value = '';
-                document.getElementById('detalles').value = '';
-                document.getElementById('foto').value = '';
-                mostrar();
-                alert("¡Guardado con éxito!");
-            } catch(e) {
-                alert("Error de memoria. Intenta con una foto más pequeña o borra anteriores.");
+                // Versión de carga directa más simple
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => {
+                    db.push({ n, d, img: reader.result });
+                    localStorage.setItem('gym_v5', JSON.stringify(db));
+                    limpiar();
+                };
+            } else {
+                db.push({ n, d, img: "" });
+                localStorage.setItem('gym_v5', JSON.stringify(db));
+                limpiar();
             }
         }
 
-        function comprimir(archivo) {
-            return new Promise((res) => {
-                const reader = new FileReader();
-                reader.readAsDataURL(archivo);
-                reader.onload = (ev) => {
-                    const img = new Image();
-                    img.src = ev.target.result;
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        const anchoMax = 400; 
-                        const escala = anchoMax / img.width;
-                        canvas.width = anchoMax;
-                        canvas.height = img.height * escala;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                        res(canvas.toDataURL('image/jpeg', 0.6)); // Comprimido al 60%
-                    };
-                };
-            });
+        function limpiar() {
+            document.getElementById('n').value = '';
+            document.getElementById('d').value = '';
+            document.getElementById('f').value = '';
+            mostrar();
+            alert("¡Ejercicio guardado!");
         }
 
         function eliminar(i) {
             if(confirm("¿Borrar?")) {
-                datos.splice(i, 1);
-                localStorage.setItem('gym_vFinal_fotos', JSON.stringify(datos));
+                db.splice(i, 1);
+                localStorage.setItem('gym_v5', JSON.stringify(db));
                 mostrar();
             }
         }
